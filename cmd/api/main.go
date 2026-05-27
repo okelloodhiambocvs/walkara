@@ -12,7 +12,6 @@ func main() {
 	db := sqlite.InitDB()
 	sqlite.RunMigrations(db)
 
-	// Repositories
 	walkRepo := sqlite.NewWalkRepository(db)
 	streakRepo := sqlite.NewStreakRepository(db)
 	historyRepo := sqlite.NewHistoryRepository(db)
@@ -21,7 +20,6 @@ func main() {
 
 	mux.HandleFunc("/health", handlers.HealthCheck)
 
-	// FIX: now passes BOTH repos
 	walkHandler := handlers.NewWalkHandler(walkRepo, streakRepo)
 	mux.HandleFunc("/walk/calculate", walkHandler.CalculateWalk)
 
@@ -33,6 +31,9 @@ func main() {
 
 	streakHandler := handlers.NewStreakHandler(streakRepo)
 	mux.HandleFunc("/walk/streak", streakHandler.GetStreak)
+
+	insightsHandler := handlers.NewInsightsHandler(historyRepo)
+	mux.HandleFunc("/walk/insights/weekly", insightsHandler.GetWeeklyInsights)
 
 	log.Println("Walkara API running on :8080")
 

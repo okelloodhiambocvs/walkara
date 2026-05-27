@@ -94,3 +94,59 @@ func (r *HistoryRepository) GetWeeklySummary(userID string) (map[string]interfac
 		"period":      "last_7_days",
 	}, nil
 }
+
+func (r *HistoryRepository) GetWeeklyComparison(userID string) (map[string]interface{}, error) {
+	query := `
+	SELECT 
+		COALESCE(SUM(steps), 0),
+		COALESCE(SUM(distance), 0),
+		COALESCE(SUM(calories), 0)
+	FROM walks
+	WHERE user_id = ?
+	AND created_at >= datetime('now', '-7 days')
+	`
+
+	var thisWeekSteps int
+	var thisWeekDistance float64
+	var thisWeekCalories float64
+
+	err := r.DB.QueryRow(query, userID).Scan(
+		&thisWeekSteps,
+		&thisWeekDistance,
+		&thisWeekCalories,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// previous week
+	queryPrev := `
+	SELECT 
+		COALESCE(SUM(steps), 0)
+	FROM walks
+	WHERE user_id = ?
+	AND created_at BETWEEN datetime('now', '-14 days') AND datetime('now', '-7 days')
+	`
+
+	var prevWeekSteps int
+
+	err = r.DB.QueryRow(queryPrev, userID).Scan(&prevWeekSteps)
+	if err != nil {
+		return nil, err
+	}
+
+	improvement := 0.0
+	if prevWeekSteps > 0 {
+		improvement = (float64(thisWeekSteps-prevWeekSteps) / float64(prevWeekSteps)) * 100
+	}
+
+	return map[string]interface{}{
+		"user_id":            userID,
+		"this_week_steps":    thisWeekSteps,
+		"this_week_distance": thisWeekDistance,
+		"this_week_calories": thisWeekCalories,
+		"previous_week_steps": prevWeekSteps,
+		"improvement_pct":    improvement,
+	}, nil
+}
