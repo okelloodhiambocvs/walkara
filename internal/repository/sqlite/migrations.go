@@ -7,6 +7,13 @@ import (
 
 func RunMigrations(db *sql.DB) {
 	query := `
+	CREATE TABLE IF NOT EXISTS users (
+		id TEXT PRIMARY KEY,
+		email TEXT UNIQUE,
+		password TEXT,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
 	CREATE TABLE IF NOT EXISTS walks (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id TEXT,

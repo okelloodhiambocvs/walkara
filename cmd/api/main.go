@@ -12,14 +12,23 @@ func main() {
 	db := sqlite.InitDB()
 	sqlite.RunMigrations(db)
 
+	// repositories
 	walkRepo := sqlite.NewWalkRepository(db)
 	streakRepo := sqlite.NewStreakRepository(db)
 	historyRepo := sqlite.NewHistoryRepository(db)
+	userRepo := sqlite.NewUserRepository(db)
 
 	mux := http.NewServeMux()
 
+	// health
 	mux.HandleFunc("/health", handlers.HealthCheck)
 
+	// auth
+	authHandler := handlers.NewAuthHandler(userRepo)
+	mux.HandleFunc("/auth/register", authHandler.Register)
+	mux.HandleFunc("/auth/login", authHandler.Login)
+
+	// walk system
 	walkHandler := handlers.NewWalkHandler(walkRepo, streakRepo)
 	mux.HandleFunc("/walk/calculate", walkHandler.CalculateWalk)
 
