@@ -150,3 +150,51 @@ func (r *HistoryRepository) GetWeeklyComparison(userID string) (map[string]inter
 		"improvement_pct":    improvement,
 	}, nil
 }
+
+func (r *HistoryRepository) GetWeeklyLeaderboard() ([]map[string]interface{}, error) {
+	query := `
+	SELECT 
+		user_id,
+		COALESCE(SUM(steps), 0) as total_steps,
+		COALESCE(SUM(distance), 0) as total_distance,
+		COALESCE(SUM(calories), 0) as total_calories
+	FROM walks
+	WHERE created_at >= datetime('now', '-7 days')
+	GROUP BY user_id
+	ORDER BY total_steps DESC
+	`
+
+	rows, err := r.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var leaderboard []map[string]interface{}
+	rank := 1
+
+	for rows.Next() {
+		var userID string
+		var steps int
+		var distance float64
+		var calories float64
+
+		err := rows.Scan(&userID, &steps, &distance, &calories)
+		if err != nil {
+			return nil, err
+		}
+
+		entry := map[string]interface{}{
+			"rank":     rank,
+			"user_id":  userID,
+			"steps":    steps,
+			"distance": distance,
+			"calories": calories,
+		}
+
+		leaderboard = append(leaderboard, entry)
+		rank++
+	}
+
+	return leaderboard, nil
+}

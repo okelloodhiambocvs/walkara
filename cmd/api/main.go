@@ -44,6 +44,9 @@ func main() {
 	insightsHandler := handlers.NewInsightsHandler(historyRepo)
 	mux.HandleFunc("/walk/insights/weekly", insightsHandler.GetWeeklyInsights)
 
+	leaderboardHandler := handlers.NewLeaderboardHandler(historyRepo)
+	mux.HandleFunc("/walk/leaderboard/weekly", leaderboardHandler.GetWeeklyLeaderboard)
+
 	log.Println("Walkara API running on :8080")
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
