@@ -7,18 +7,11 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func InitDB() *sql.DB {
-	db, err := sql.Open("sqlite", "walkara.db")
+func InitDB(dbPath string) *sql.DB {
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
-		log.Fatal("failed to open database:", err)
+		log.Fatal(err)
 	}
-
-	// Test connection
-	if err := db.Ping(); err != nil {
-		log.Fatal("failed to connect to database:", err)
-	}
-
-	log.Println("SQLite database connected")
 
 	return db
 }
