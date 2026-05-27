@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"walkara/internal/repository/sqlite"
 	"walkara/internal/services"
+	"walkara/internal/utils"
 )
 
 type InsightsHandler struct {
@@ -21,31 +21,24 @@ func NewInsightsHandler(repo *sqlite.HistoryRepository) *InsightsHandler {
 }
 
 func (h *InsightsHandler) GetWeeklyInsights(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	userID := r.URL.Query().Get("user_id")
 
 	if userID == "" {
-		http.Error(w, "missing user_id", http.StatusBadRequest)
+		utils.JSON(w, http.StatusBadRequest, false, "missing user_id", nil, "user_id is required")
 		return
 	}
 
 	data, err := h.repo.GetWeeklyComparison(userID)
 	if err != nil {
-		http.Error(w, "failed to generate insights", http.StatusInternalServerError)
+		utils.JSON(w, http.StatusInternalServerError, false, "failed to generate insights", nil, err.Error())
 		return
 	}
 
-	score := h.service.CalculateScore(
-		data["this_week_steps"].(int),
-		data["improvement_pct"].(float64),
-	)
+	steps := data["this_week_steps"].(int)
+	improvement := data["improvement_pct"].(float64)
 
-	message := h.service.GenerateMessage(
-		score,
-		data["improvement_pct"].(float64),
-		data["this_week_steps"].(int),
-	)
+	score := h.service.CalculateScore(steps, improvement)
+	message := h.service.GenerateMessage(score, improvement, steps)
 
 	response := map[string]interface{}{
 		"user_id":         userID,
@@ -55,5 +48,5 @@ func (h *InsightsHandler) GetWeeklyInsights(w http.ResponseWriter, r *http.Reque
 		"insight_version": "v1",
 	}
 
-	json.NewEncoder(w).Encode(response)
+	utils.JSON(w, http.StatusOK, true, "weekly insights generated", response, "")
 }

@@ -6,13 +6,14 @@ import (
 
 	"walkara/internal/repository/sqlite"
 	"walkara/internal/services"
+	"walkara/internal/utils"
 
 	"github.com/google/uuid"
 )
 
 type AuthHandler struct {
-	repo   *sqlite.UserRepository
-	auth   *services.AuthService
+	repo *sqlite.UserRepository
+	auth *services.AuthService
 }
 
 func NewAuthHandler(repo *sqlite.UserRepository) *AuthHandler {
@@ -32,19 +33,28 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
-	hash, _ := h.auth.HashPassword(req.Password)
-	id := uuid.NewString()
-
-	err := h.repo.CreateUser(id, req.Email, hash)
-	if err != nil {
-		http.Error(w, "user creation failed", http.StatusInternalServerError)
+	if req.Email == "" || req.Password == "" {
+		utils.JSON(w, http.StatusBadRequest, false, "email and password required", nil, "missing fields")
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	hash, err := h.auth.HashPassword(req.Password)
+	if err != nil {
+		utils.JSON(w, http.StatusInternalServerError, false, "failed to hash password", nil, err.Error())
+		return
+	}
+
+	id := uuid.NewString()
+
+	err = h.repo.CreateUser(id, req.Email, hash)
+	if err != nil {
+		utils.JSON(w, http.StatusInternalServerError, false, "user creation failed", nil, err.Error())
+		return
+	}
+
+	utils.JSON(w, http.StatusOK, true, "user registered successfully", map[string]string{
 		"user_id": id,
-		"message": "user registered successfully",
-	})
+	}, "")
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -57,20 +67,29 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
+	if req.Email == "" || req.Password == "" {
+		utils.JSON(w, http.StatusBadRequest, false, "email and password required", nil, "missing fields")
+		return
+	}
+
 	id, hash, err := h.repo.GetUserByEmail(req.Email)
 	if err != nil {
-		http.Error(w, "invalid credentials", http.StatusUnauthorized)
+		utils.JSON(w, http.StatusUnauthorized, false, "invalid credentials", nil, "user not found")
 		return
 	}
 
 	if !h.auth.CheckPassword(hash, req.Password) {
-		http.Error(w, "invalid credentials", http.StatusUnauthorized)
+		utils.JSON(w, http.StatusUnauthorized, false, "invalid credentials", nil, "wrong password")
 		return
 	}
 
-	token, _ := h.auth.GenerateToken(id)
+	token, err := h.auth.GenerateToken(id)
+	if err != nil {
+		utils.JSON(w, http.StatusInternalServerError, false, "failed to generate token", nil, err.Error())
+		return
+	}
 
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	utils.JSON(w, http.StatusOK, true, "login successful", map[string]string{
 		"token": token,
-	})
+	}, "")
 }

@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"walkara/internal/repository/sqlite"
+	"walkara/internal/utils"
 )
 
 type SummaryHandler struct {
@@ -16,20 +16,18 @@ func NewSummaryHandler(repo *sqlite.HistoryRepository) *SummaryHandler {
 }
 
 func (h *SummaryHandler) GetWeeklySummary(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	userID := r.URL.Query().Get("user_id")
 
 	if userID == "" {
-		http.Error(w, "missing user_id", http.StatusBadRequest)
+		utils.JSON(w, http.StatusBadRequest, false, "missing user_id", nil, "user_id is required")
 		return
 	}
 
 	summary, err := h.repo.GetWeeklySummary(userID)
 	if err != nil {
-		http.Error(w, "failed to fetch summary", http.StatusInternalServerError)
+		utils.JSON(w, http.StatusInternalServerError, false, "failed to fetch summary", nil, err.Error())
 		return
 	}
 
-	json.NewEncoder(w).Encode(summary)
+	utils.JSON(w, http.StatusOK, true, "weekly summary fetched", summary, "")
 }

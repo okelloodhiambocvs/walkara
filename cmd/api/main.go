@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"walkara/internal/handlers"
+	"walkara/internal/middleware"
 	"walkara/internal/repository/sqlite"
 )
 
@@ -12,7 +13,6 @@ func main() {
 	db := sqlite.InitDB()
 	sqlite.RunMigrations(db)
 
-	// repositories
 	walkRepo := sqlite.NewWalkRepository(db)
 	streakRepo := sqlite.NewStreakRepository(db)
 	historyRepo := sqlite.NewHistoryRepository(db)
@@ -20,32 +20,30 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	// health
 	mux.HandleFunc("/health", handlers.HealthCheck)
 
-	// auth
 	authHandler := handlers.NewAuthHandler(userRepo)
 	mux.HandleFunc("/auth/register", authHandler.Register)
 	mux.HandleFunc("/auth/login", authHandler.Login)
 
-	// walk system
 	walkHandler := handlers.NewWalkHandler(walkRepo, streakRepo)
-	mux.HandleFunc("/walk/calculate", walkHandler.CalculateWalk)
 
 	historyHandler := handlers.NewHistoryHandler(historyRepo)
-	mux.HandleFunc("/walk/history", historyHandler.GetHistory)
 
 	summaryHandler := handlers.NewSummaryHandler(historyRepo)
-	mux.HandleFunc("/walk/summary/weekly", summaryHandler.GetWeeklySummary)
 
 	streakHandler := handlers.NewStreakHandler(streakRepo)
-	mux.HandleFunc("/walk/streak", streakHandler.GetStreak)
 
 	insightsHandler := handlers.NewInsightsHandler(historyRepo)
-	mux.HandleFunc("/walk/insights/weekly", insightsHandler.GetWeeklyInsights)
 
 	leaderboardHandler := handlers.NewLeaderboardHandler(historyRepo)
-	mux.HandleFunc("/walk/leaderboard/weekly", leaderboardHandler.GetWeeklyLeaderboard)
+
+	mux.HandleFunc("/walk/calculate", middleware.AuthMiddleware(walkHandler.CalculateWalk))
+	mux.HandleFunc("/walk/history", middleware.AuthMiddleware(historyHandler.GetHistory))
+	mux.HandleFunc("/walk/summary/weekly", middleware.AuthMiddleware(summaryHandler.GetWeeklySummary))
+	mux.HandleFunc("/walk/streak", middleware.AuthMiddleware(streakHandler.GetStreak))
+	mux.HandleFunc("/walk/insights/weekly", middleware.AuthMiddleware(insightsHandler.GetWeeklyInsights))
+	mux.HandleFunc("/walk/leaderboard/weekly", middleware.AuthMiddleware(leaderboardHandler.GetWeeklyLeaderboard))
 
 	log.Println("Walkara API running on :8080")
 
