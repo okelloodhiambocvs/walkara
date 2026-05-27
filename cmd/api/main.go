@@ -13,16 +13,23 @@ func main() {
 	db := sqlite.InitDB()
 	sqlite.RunMigrations(db)
 
-	// Repository
+	// Repositories
 	walkRepo := sqlite.NewWalkRepository(db)
+	historyRepo := sqlite.NewHistoryRepository(db)
 
 	// Handlers
 	mux := http.NewServeMux()
 
+	// Health endpoint
 	mux.HandleFunc("/health", handlers.HealthCheck)
 
+	// Walk calculation (save activity)
 	walkHandler := handlers.NewWalkHandler(walkRepo)
 	mux.HandleFunc("/walk/calculate", walkHandler.CalculateWalk)
+
+	// Walk history (Strava-like feed)
+	historyHandler := handlers.NewHistoryHandler(historyRepo)
+	mux.HandleFunc("/walk/history", historyHandler.GetHistory)
 
 	log.Println("Walkara API running on :8080")
 
