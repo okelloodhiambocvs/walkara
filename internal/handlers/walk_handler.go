@@ -17,6 +17,8 @@ func NewWalkHandler() *WalkHandler {
 }
 
 func (h *WalkHandler) CalculateWalk(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	var req struct {
 		Steps int `json:"steps"`
 	}
@@ -26,12 +28,10 @@ func (h *WalkHandler) CalculateWalk(w http.ResponseWriter, r *http.Request) {
 	distance := h.service.StepsToKM(req.Steps)
 	calories := h.service.EstimateCalories(req.Steps)
 
-	response := map[string]interface{}{
-		"steps":     req.Steps,
-		"distance":  distance,
-		"calories":  calories,
-		"message":   "Walkara activity processed",
-	}
-
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"steps":    req.Steps,
+		"distance": distance,
+		"calories": calories,
+		"message":  "Walkara activity processed",
+	})
 }

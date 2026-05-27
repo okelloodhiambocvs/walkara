@@ -9,16 +9,12 @@ import (
 func main() {
 	mux := http.NewServeMux()
 
-	healthHandler := handlers.HealthCheck
-	walkHandler := handlers.NewWalkHandler()
+	mux.HandleFunc("/health", handlers.HealthCheck)
 
-	mux.HandleFunc("/health", healthHandler)
+	walkHandler := handlers.NewWalkHandler()
 	mux.HandleFunc("/walk/calculate", walkHandler.CalculateWalk)
 
 	log.Println("Walkara API running on :8080")
 
-	err := http.ListenAndServe(":8080", mux)
-	if err != nil {
-		log.Fatal(err)
-	}
+	log.Fatal(http.ListenAndServe(":8080", mux))
 }
