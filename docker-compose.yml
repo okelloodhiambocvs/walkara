@@ -1,0 +1,19 @@
+version: '3.9'
+
+services:
+  walkara:
+    build: .
+    container_name: walkara-api
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      PORT: 8080
+      DB_PATH: /app/data/walkara.db
+      JWT_SECRET: walkara_prod_secret
+
+    volumes:
+      - ./data:/app/data
+
+    restart: unless-stopped
