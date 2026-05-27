@@ -3,6 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+
+	"walkara/internal/repository/sqlite"
 	"walkara/internal/services"
 )
 
@@ -10,9 +12,9 @@ type WalkHandler struct {
 	service *services.WalkService
 }
 
-func NewWalkHandler() *WalkHandler {
+func NewWalkHandler(repo *sqlite.WalkRepository) *WalkHandler {
 	return &WalkHandler{
-		service: services.NewWalkService(),
+		service: services.NewWalkService(repo),
 	}
 }
 
@@ -20,18 +22,23 @@ func (h *WalkHandler) CalculateWalk(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var req struct {
-		Steps int `json:"steps"`
+		UserID string `json:"user_id"`
+		Steps  int    `json:"steps"`
 	}
 
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
-	distance := h.service.StepsToKM(req.Steps)
-	calories := h.service.EstimateCalories(req.Steps)
+	distance, calories, err := h.service.SaveWalk(req.UserID, req.Steps)
+	if err != nil {
+		http.Error(w, "failed to save walk", http.StatusInternalServerError)
+		return
+	}
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
+		"user_id":  req.UserID,
 		"steps":    req.Steps,
 		"distance": distance,
 		"calories": calories,
-		"message":  "Walkara activity processed",
+		"message":  "Walk saved successfully",
 	})
 }

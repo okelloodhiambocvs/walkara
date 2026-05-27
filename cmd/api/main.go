@@ -9,15 +9,19 @@ import (
 )
 
 func main() {
-	// Init DB
+	// DB init
 	db := sqlite.InitDB()
 	sqlite.RunMigrations(db)
 
+	// Repository
+	walkRepo := sqlite.NewWalkRepository(db)
+
+	// Handlers
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", handlers.HealthCheck)
 
-	walkHandler := handlers.NewWalkHandler()
+	walkHandler := handlers.NewWalkHandler(walkRepo)
 	mux.HandleFunc("/walk/calculate", walkHandler.CalculateWalk)
 
 	log.Println("Walkara API running on :8080")
