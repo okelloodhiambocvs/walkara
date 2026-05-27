@@ -4,18 +4,20 @@ import (
 	"log"
 	"net/http"
 
-	"walkara/internal/database"
 	"walkara/internal/handlers"
+	"walkara/internal/repository/sqlite"
 )
 
 func main() {
-	db := database.InitDB()
+	// Init DB
+	db := sqlite.InitDB()
+	sqlite.RunMigrations(db)
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", handlers.HealthCheck)
 
-	walkHandler := handlers.NewWalkHandler(db)
+	walkHandler := handlers.NewWalkHandler()
 	mux.HandleFunc("/walk/calculate", walkHandler.CalculateWalk)
 
 	log.Println("Walkara API running on :8080")

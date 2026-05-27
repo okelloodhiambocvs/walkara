@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"walkara/internal/services"
@@ -9,12 +8,30 @@ import (
 
 type WalkHandler struct {
 	service *services.WalkService
-	db      *sql.DB
 }
 
-func NewWalkHandler(db *sql.DB) *WalkHandler {
+func NewWalkHandler() *WalkHandler {
 	return &WalkHandler{
 		service: services.NewWalkService(),
-		db:      db,
 	}
+}
+
+func (h *WalkHandler) CalculateWalk(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var req struct {
+		Steps int `json:"steps"`
+	}
+
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	distance := h.service.StepsToKM(req.Steps)
+	calories := h.service.EstimateCalories(req.Steps)
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"steps":    req.Steps,
+		"distance": distance,
+		"calories": calories,
+		"message":  "Walkara activity processed",
+	})
 }
