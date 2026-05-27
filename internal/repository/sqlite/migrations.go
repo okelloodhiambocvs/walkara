@@ -15,6 +15,13 @@ func RunMigrations(db *sql.DB) {
 		calories REAL,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
+
+	CREATE TABLE IF NOT EXISTS user_streaks (
+		user_id TEXT PRIMARY KEY,
+		current_streak INTEGER DEFAULT 0,
+		longest_streak INTEGER DEFAULT 0,
+		last_active_date DATE
+	);
 	`
 
 	_, err := db.Exec(query)

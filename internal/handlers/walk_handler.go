@@ -12,9 +12,9 @@ type WalkHandler struct {
 	service *services.WalkService
 }
 
-func NewWalkHandler(repo *sqlite.WalkRepository) *WalkHandler {
+func NewWalkHandler(wRepo *sqlite.WalkRepository, sRepo *sqlite.StreakRepository) *WalkHandler {
 	return &WalkHandler{
-		service: services.NewWalkService(repo),
+		service: services.NewWalkService(wRepo, sRepo),
 	}
 }
 
