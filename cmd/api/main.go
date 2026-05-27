@@ -7,12 +7,17 @@ import (
 	"walkara/config"
 	"walkara/internal/handlers"
 	"walkara/internal/repository/sqlite"
+	"walkara/internal/services"
 )
 
 func main() {
 	cfg := config.LoadConfig()
 
-	db := sqlite.InitDB(cfg.DB)
+	// production JWT secret injection
+	services.JWTSecret = []byte(cfg.JWTSecret)
+
+	// database init
+	db := sqlite.InitDB(cfg.DBPath)
 	sqlite.RunMigrations(db)
 
 	// repositories
@@ -32,6 +37,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
+	// health
 	mux.HandleFunc("/health", handlers.HealthCheck)
 
 	// auth

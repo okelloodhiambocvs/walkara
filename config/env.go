@@ -3,23 +3,31 @@ package config
 import "os"
 
 type Config struct {
-	Port string
-	DB   string
+	Port      string
+	DBPath    string
+	JWTSecret string
 }
 
 func LoadConfig() *Config {
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	db := os.Getenv("DB_PATH")
-	if db == "" {
-		db = "./walkara.db"
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "./walkara.db"
+	}
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "walkara_dev_secret"
 	}
 
 	return &Config{
-		Port: port,
-		DB:   db,
+		Port:      port,
+		DBPath:    dbPath,
+		JWTSecret: jwtSecret,
 	}
 }

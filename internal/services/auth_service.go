@@ -7,7 +7,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtKey = []byte("walkara_secret_key")
+var JWTSecret []byte
 
 type AuthService struct{}
 
@@ -21,16 +21,23 @@ func (a *AuthService) HashPassword(password string) (string, error) {
 }
 
 func (a *AuthService) CheckPassword(hash, password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
+	return bcrypt.CompareHashAndPassword(
+		[]byte(hash),
+		[]byte(password),
+	) == nil
 }
 
 func (a *AuthService) GenerateToken(userID string) (string, error) {
+
 	claims := jwt.MapClaims{
 		"user_id": userID,
-		"exp":     time.Now().Add(time.Hour * 72).Unix(),
+		"exp":     time.Now().Add(72 * time.Hour).Unix(),
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtKey)
+	token := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		claims,
+	)
+
+	return token.SignedString(JWTSecret)
 }
